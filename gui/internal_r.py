@@ -3,11 +3,12 @@ from os import path
 import logging
 
 from PyQt5 import uic
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QSettings, Qt
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PyQt5.QtWidgets import QGroupBox, QHeaderView
 from pandas import DataFrame, concat
 
 from instruments.instrument import Instrument
+from app_settings import app_settings
 
 log = logging.getLogger(__name__)
 
@@ -74,14 +75,14 @@ class InternalR(QGroupBox):
         self.reset()
 
     def load_settings(self):
-        settings = QSettings()
+        settings = app_settings()
 
         self.setChecked(settings.value("InternalR/enabled", True, type=bool))
         self.v_period = settings.value("InternalR/period", 0.1, type=float)
         self.measurePeriod.setValue(self.v_period)
 
     def save_settings(self):
-        settings = QSettings()
+        settings = app_settings()
 
         settings.setValue("InternalR/enabled", self.isChecked())
         settings.setValue("InternalR/period", self.measurePeriod.value())

@@ -6,7 +6,6 @@ matplotlib.use('Qt5Agg')
 from PyQt5 import QtWidgets, uic
 
 from PyQt5.QtCore import (
-    QSettings,
     Qt,
     QSize,
     QPoint,
@@ -35,6 +34,7 @@ from gui.swcccv import SwCCCV
 from gui.internal_r import InternalR
 from gui.log_control import LogControl
 from sys import argv
+from app_settings import app_settings, settings_exist
 
 
 TIME_SCALES = [
@@ -106,6 +106,9 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
 
         uic.loadUi('gui/main.ui', self)
+        self._saved_port = None
+        self._saved_time_scale = -1
+        self._saved_follow = True
         self.load_settings()
 
         self.plot_placeholder.setLayout(self.plot_layout())
@@ -189,6 +192,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.timeScaleCombo.addItem(label,
                                         -1 if seconds is None else seconds)
         self.timeScaleCombo.setCurrentIndex(self.timeScaleCombo.count() - 1)
+        self._restore_time_axis_settings()
         self.timeScaleCombo.currentIndexChanged.connect(self.on_time_scale_changed)
         self.followLatest.toggled.connect(self.on_follow_latest_changed)
         self.timeScrollBar.valueChanged.connect(self.on_time_scroll)
@@ -404,14 +408,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def on_ports_listed(self, ports):
         current = self.portCombo.currentData()
+        self.portCombo.blockSignals(True)
         self.portCombo.clear()
         for resource in ports:
             self.portCombo.addItem(resource_label(resource), resource)
-        if self.portCombo.count() == 0:
-            self.portCombo.addItem("(no ports found)", None)
-        index = self.portCombo.findData(current)
+
+        target = current or self._saved_port
+        index = self.portCombo.findData(target) if target else -1
         if index >= 0:
             self.portCombo.setCurrentIndex(index)
+        elif self.portCombo.count() == 0:
+            self.portCombo.addItem("(no ports found)", None)
+            self.portCombo.setCurrentIndex(0)
+        else:
+            self.portCombo.setCurrentIndex(-1)
+        self.portCombo.blockSignals(False)
 
     def on_device_connected(self, resource):
         self.device_connected = True
@@ -423,6 +434,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.openButton.setText("CLOSE")
         self.openButton.setEnabled(True)
         self.set_device_controls_enabled(True)
+        self._saved_port = resource
 
     def on_device_disconnected(self):
         self.device_connected = False
@@ -509,15 +521,32 @@ class MainWindow(QtWidgets.QMainWindow):
         self._plot_data = None
         self.backend.send_command({Instrument.COMMAND_RESET: 0.0})
 
+    def _restore_time_axis_settings(self):
+        if not settings_exist():
+            return
+        index = self.timeScaleCombo.findData(self._saved_time_scale)
+        if index >= 0:
+            self.timeScaleCombo.setCurrentIndex(index)
+        self.followLatest.setChecked(self._saved_follow)
+
     def load_settings(self):
-        settings = QSettings()
+        if not settings_exist():
+            return
+        settings = app_settings()
 
         self.resize(settings.value("MainWindow/size", QSize(1024, 600)))
         self.move(settings.value("MainWindow/pos", QPoint(0, 0)))
         self.cellLabel.setText(settings.value("MainWindow/cellLabel", 'Cell x'))
-        self.checkbox_t.setCheckState(Qt.Checked if settings.value("MainWindow/checkbox_t", True) == 'true'  else Qt.Unchecked)
-        self.checkbox_p.setCheckState(Qt.Checked if settings.value("MainWindow/checkbox_p", True) == 'true'  else Qt.Unchecked)
-
+        self.checkbox_t.setChecked(
+            settings.value("MainWindow/checkbox_t", False, type=bool))
+        self.checkbox_p.setChecked(
+            settings.value("MainWindow/checkbox_p", False, type=bool))
+        saved_port = settings.value("Connection/port", "", type=str)
+        self._saved_port = saved_port if saved_port else None
+        self._saved_time_scale = settings.value("MainWindow/timeScale", -1,
+                                                type=int)
+        self._saved_follow = settings.value("MainWindow/followLatest", True,
+                                            type=bool)
 
     def write_logs(self):
         if self.logControl.isChecked():
@@ -527,13 +556,20 @@ class MainWindow(QtWidgets.QMainWindow):
                                          self.cellLabel.text())
 
     def save_settings(self):
-        settings = QSettings()
+        settings = app_settings()
 
         settings.setValue("MainWindow/size", self.size())
         settings.setValue("MainWindow/pos", self.pos())
         settings.setValue("MainWindow/cellLabel", self.cellLabel.text())
         settings.setValue("MainWindow/checkbox_t", self.checkbox_t.isChecked())
         settings.setValue("MainWindow/checkbox_p", self.checkbox_p.isChecked())
+        scale = self.timeScaleCombo.currentData()
+        settings.setValue("MainWindow/timeScale",
+                          -1 if scale is None else int(scale))
+        settings.setValue("MainWindow/followLatest",
+                          self.followLatest.isChecked())
+        port = self.portCombo.currentData()
+        settings.setValue("Connection/port", port if port else "")
         settings.sync()
 
 

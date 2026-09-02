@@ -1,9 +1,9 @@
 from PyQt5 import uic
-from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QGroupBox
 import logging
 
 from instruments.instrument import Instrument
+from app_settings import app_settings
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class SwCCCV(QGroupBox):
         self.reset()
 
     def _load_settings(self):
-        settings = QSettings()
+        settings = app_settings()
 
         self.setChecked(
             settings.value("SwCCCV/enabled", True, type=bool))
@@ -30,7 +30,7 @@ class SwCCCV(QGroupBox):
             settings.value("SwCCCV/targetVoltage", 2.9, type=float))
 
     def save_settings(self):
-        settings = QSettings()
+        settings = app_settings()
 
         settings.setValue("SwCCCV/enabled", self.isChecked())
         settings.setValue("SwCCCV/baseCurrent", self.baseCurrent.value())

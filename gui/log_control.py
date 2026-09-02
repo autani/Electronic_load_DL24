@@ -2,8 +2,9 @@ from os import path
 import logging
 
 from PyQt5 import uic
-from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QGroupBox, QFileDialog
+
+from app_settings import app_settings
 
 log = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ class LogControl(QGroupBox):
         self._map_controls()
 
     def save_settings(self):
-        settings = QSettings()
+        settings = app_settings()
 
         settings.setValue("LogControl/enabled", self.isChecked())
         settings.setValue("LogControl/path", self.full_path)
@@ -29,7 +30,7 @@ class LogControl(QGroupBox):
         self.selectLogPath.clicked.connect(self._select_path)
 
     def _load_settings(self):
-        settings = QSettings()
+        settings = app_settings()
         self.setChecked(settings.value("LogControl/enabled", False, type=bool))
         self.full_path = settings.value("LogControl/path", self.home)
         self._display_path(self.full_path)

@@ -134,3 +134,6 @@ dmypy.json
 
 # Temp files
 tmp/
+
+# Local application settings (serial port, window layout, etc.)
+.settings
