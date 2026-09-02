@@ -264,7 +264,7 @@
               </widget>
              </item>
 
-             <!-- load enabled -->
+             <!-- load on/off -->
              <item row="4" column="0">
               <widget class="QLabel" name="label_10">
                <property name="text">
@@ -273,11 +273,37 @@
               </widget>
              </item>
              <item row="4" column="1">
-              <widget class="QCheckBox" name="en_checkbox">
-               <property name="text">
-                <string>Enabled</string>
+              <layout class="QHBoxLayout" name="loadButtons">
+               <property name="spacing">
+                <number>6</number>
                </property>
-              </widget>
+               <item>
+                <widget class="QPushButton" name="loadOnButton">
+                 <property name="text">
+                  <string>ON</string>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>48</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="loadOffButton">
+                 <property name="text">
+                  <string>OFF</string>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>48</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </item>
 
             </layout>

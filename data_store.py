@@ -17,10 +17,16 @@ class DataStore:
     def reset(self):
         self.lastrow = {}
         self.data = DataFrame()
+        self._t0 = None
 
     def append(self, row):
         log.debug('%s', row)
         self.lastrow = row
+        now = datetime.now()
+        if self._t0 is None:
+            self._t0 = now
+        row = dict(row)
+        row['t_elapsed'] = (now - self._t0).total_seconds()
         self.data = concat([self.data, DataFrame([row])], ignore_index=True)
 
     def write(self, basedir, prefix):
