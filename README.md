@@ -62,10 +62,26 @@ Run setup once (or again after `requirements.txt` changes). After that, use `win
 
 ## Command line (Windows, Linux, macOS)
 
-- Install Python 3 (developed with 3.12; 3.8+ should work)
-- Clone the repo
-- `pip install --user -r requirements.txt` (or use a venv)
-- Start with `python main.py`
+Use a virtual environment (recommended):
+
+1. Install Python 3 (developed with 3.12; 3.8+ should work)
+2. Clone the repo and open a terminal in this folder
+3. Create and activate a venv, then install dependencies:
+
+```text
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# Linux / macOS
+source .venv/bin/activate
+
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+4. Start the application (with the venv still active):
 
 ```text
 python main.py           # quiet console

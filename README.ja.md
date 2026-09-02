@@ -62,10 +62,26 @@ Atorch DL24 電子負荷向けの Python 制御ソフトウェアです。
 
 ## コマンドライン（Windows / Linux / macOS）
 
-- Python 3 を入れる（開発は 3.12。3.8 以降を想定）
-- リポジトリをクローンする
-- `pip install --user -r requirements.txt`（venv でも可）
-- `python main.py` で起動
+仮想環境（venv）の利用を推奨します。
+
+1. Python 3 を入れる（開発は 3.12。3.8 以降を想定）
+2. リポジトリをクローンし、このフォルダでターミナルを開く
+3. venv を作成・有効化し、依存パッケージを入れる:
+
+```text
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# Linux / macOS
+source .venv/bin/activate
+
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+4. venv を有効にしたままアプリを起動する:
 
 ```text
 python main.py           # コンソール出力なし
