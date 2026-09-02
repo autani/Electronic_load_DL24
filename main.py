@@ -25,7 +25,6 @@ class Main:
         self.instr_worker.signals.data_row.connect(self.data_callback)
         self.instr_worker.signals.status_update.connect(self.status_callback)
         self.threadpool.start(self.instr_worker)
-        self.instr_worker.signals.start.emit()
 
     def subscribe(self, receiver):
         self.data_receivers.add(receiver)
@@ -42,6 +41,15 @@ class Main:
 
     def send_command(self, command):
         self.instr_worker.signals.command.emit(command)
+
+    def request_port_list(self):
+        self.instr_worker.signals.request_port_list.emit()
+
+    def connect_port(self, resource):
+        self.instr_worker.signals.connect_requested.emit(resource)
+
+    def disconnect_port(self):
+        self.instr_worker.signals.disconnect_requested.emit()
 
     def at_exit(self):
         self.instr_worker.signals.exit.emit()

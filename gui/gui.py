@@ -23,6 +23,7 @@ from matplotlib.figure import Figure
 from datetime import time, datetime
 
 from instruments.instrument import Instrument
+from instruments import resource_label
 from gui.swcccv import SwCCCV
 from gui.internal_r import InternalR
 from gui.log_control import LogControl
@@ -50,7 +51,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.logControl = LogControl()
         self.swCCCV = SwCCCV()
         self.internal_r = InternalR()
-        self.controlsLayout.insertWidget(3, self.internal_r)
+        self.controlsLayout.insertWidget(4, self.internal_r)
         self.tab2.layout().addWidget(self.logControl, 0, 0)
         self.tab2.layout().addWidget(self.swCCCV, 1, 0)
         self.tabs.addTab(self.tab2, "Settings")
@@ -79,6 +80,9 @@ class MainWindow(QtWidgets.QMainWindow):
         return layout
 
     def map_controls(self):
+        self.device_connected = False
+        self.openButton.clicked.connect(self.open_clicked)
+        self.refreshPortsButton.clicked.connect(self.refresh_ports_clicked)
         self.en_checkbox.stateChanged.connect(self.enabled_changed)
         self.set_voltage.valueChanged.connect(self.voltage_changed)
         self.set_current.valueChanged.connect(self.current_changed)
@@ -90,6 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.set_current_timer = QTimer(singleShot=True,
                                         timeout=self.current_set)
         self.set_timer_timer = QTimer(singleShot=True, timeout=self.timer_set)
+        self.set_device_controls_enabled(False)
 
     def data_row(self, data, row):
         if data:
@@ -187,6 +192,66 @@ class MainWindow(QtWidgets.QMainWindow):
         backend.subscribe(self)
         self.swCCCV.set_backend(backend)
         self.internal_r.set_backend(backend)
+        signals = backend.instr_worker.signals
+        signals.ports_listed.connect(self.on_ports_listed)
+        signals.connected.connect(self.on_device_connected)
+        signals.disconnected.connect(self.on_device_disconnected)
+        self.statusBar().showMessage("Disconnected")
+        backend.request_port_list()
+
+    def set_device_controls_enabled(self, enabled):
+        self.set_voltage.setEnabled(enabled)
+        self.set_current.setEnabled(enabled)
+        self.set_timer.setEnabled(enabled)
+        self.en_checkbox.setEnabled(enabled)
+        self.resetButton.setEnabled(enabled)
+
+    def refresh_ports_clicked(self):
+        self.backend.request_port_list()
+
+    def open_clicked(self):
+        if self.device_connected:
+            self.openButton.setEnabled(False)
+            self.backend.disconnect_port()
+            return
+        resource = self.portCombo.currentData()
+        if not resource:
+            self.statusBar().showMessage("No serial port selected")
+            return
+        self.openButton.setEnabled(False)
+        self.portCombo.setEnabled(False)
+        self.refreshPortsButton.setEnabled(False)
+        self.backend.connect_port(resource)
+
+    def on_ports_listed(self, ports):
+        current = self.portCombo.currentData()
+        self.portCombo.clear()
+        for resource in ports:
+            self.portCombo.addItem(resource_label(resource), resource)
+        if self.portCombo.count() == 0:
+            self.portCombo.addItem("(no ports found)", None)
+        index = self.portCombo.findData(current)
+        if index >= 0:
+            self.portCombo.setCurrentIndex(index)
+
+    def on_device_connected(self, resource):
+        self.device_connected = True
+        index = self.portCombo.findData(resource)
+        if index >= 0:
+            self.portCombo.setCurrentIndex(index)
+        self.portCombo.setEnabled(False)
+        self.refreshPortsButton.setEnabled(False)
+        self.openButton.setText("CLOSE")
+        self.openButton.setEnabled(True)
+        self.set_device_controls_enabled(True)
+
+    def on_device_disconnected(self):
+        self.device_connected = False
+        self.portCombo.setEnabled(True)
+        self.refreshPortsButton.setEnabled(True)
+        self.openButton.setText("OPEN")
+        self.openButton.setEnabled(True)
+        self.set_device_controls_enabled(False)
 
     def closeEvent(self, event):
         self.logControl.save_settings()
@@ -199,7 +264,10 @@ class MainWindow(QtWidgets.QMainWindow):
         event.accept()
 
     def enabled_changed(self):
-        if not self.programmaticalStateChange: 
+        if not self.device_connected:
+            self.programmaticalStateChange = False
+            return
+        if not self.programmaticalStateChange:
             value = self.en_checkbox.isChecked()
             self.en_checkbox.clearFocus()
             self.backend.send_command({Instrument.COMMAND_ENABLE: value})
@@ -212,6 +280,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.set_voltage_timer.start(1000)
 
     def voltage_set(self):
+        if not self.device_connected:
+            return
         value = round(self.set_voltage.value(), 2)
         self.set_voltage.clearFocus()
         self.backend.send_command({Instrument.COMMAND_SET_VOLTAGE: value})
@@ -221,6 +291,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.set_current_timer.start(1000)
 
     def current_set(self):
+        if not self.device_connected:
+            return
         value = round(self.set_current.value(), 2)
         self.set_current.clearFocus()
         self.backend.send_command({Instrument.COMMAND_SET_CURRENT: value})
@@ -230,6 +302,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.set_timer_timer.start(1000)
 
     def timer_set(self):
+        if not self.device_connected:
+            return
         set_time = self.set_timer.time()
         value = time(set_time.hour(), set_time.minute(), set_time.second())
         self.set_timer.clearFocus()
@@ -237,6 +311,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def reset_dev(self, s):
+        if not self.device_connected:
+            return
         self.resetButton.clearFocus()
         self.write_logs()
         self.swCCCV.reset()
