@@ -1,8 +1,11 @@
 from time import sleep
 
 from PyQt5.QtCore import QObject, QRunnable, pyqtSignal, pyqtSlot
+import logging
 
 from instruments import Instruments
+
+log = logging.getLogger(__name__)
 
 
 class InstrumentSignals(QObject):
@@ -97,7 +100,7 @@ class InstrumentWorker(QRunnable):
         try:
             self.instr.close()
         except Exception as err:
-            print(err)
+            log.debug('%s', err)
         self.instr = None
 
     def handle_command(self, command):

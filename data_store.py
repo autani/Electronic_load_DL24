@@ -1,7 +1,10 @@
 from datetime import datetime
 from os import path
+import logging
 
 from pandas import DataFrame, concat
+
+log = logging.getLogger(__name__)
 
 
 class DataStore:
@@ -16,7 +19,7 @@ class DataStore:
         self.data = DataFrame()
 
     def append(self, row):
-        print(row)
+        log.debug('%s', row)
         self.lastrow = row
         self.data = concat([self.data, DataFrame([row])], ignore_index=True)
 
@@ -25,10 +28,10 @@ class DataStore:
         full_path = path.join(basedir, filename)
         export_rows = self.data.drop_duplicates()
         if export_rows.shape[0]:
-            print("Write RAW data to {}".format(path.relpath(full_path)))
+            log.debug("Write RAW data to {}".format(path.relpath(full_path)))
             self.data.drop_duplicates().to_csv(full_path)
         else:
-            print("no data")
+            log.debug("no data")
 
     def plot(self, **args):
         return self.data.plot(**args)

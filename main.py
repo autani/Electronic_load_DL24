@@ -1,11 +1,33 @@
 from signal import signal, SIGTERM, SIGINT
-from sys import exit
+from sys import argv, exit
+import argparse
+import logging
 
 from PyQt5.QtCore import QCoreApplication, QThreadPool
 
 from data_store import DataStore
 from gui.gui import GUI
 from instr_thread import InstrumentWorker
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Control software for the Atorch DL24 electronic load.')
+    parser.add_argument(
+        '-v',
+        '--verbose',
+        action='store_true',
+        help='print debug messages to the console')
+    args, remaining = parser.parse_known_args()
+    argv[:] = [argv[0]] + remaining
+    return args
+
+
+def setup_logging(verbose):
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.WARNING,
+        format='%(message)s',
+    )
 
 
 class Main:
@@ -61,4 +83,5 @@ class Main:
 
 
 if __name__ == "__main__":
+    setup_logging(parse_args().verbose)
     Main()

@@ -1,8 +1,11 @@
 #!/usr/bin/python
 
+import logging
 import pyvisa as visa
 
 from instruments import px100
+
+log = logging.getLogger(__name__)
 
 
 def resource_label(resource_name):
@@ -23,7 +26,7 @@ class Instruments:
         try:
             resources = self.rm.list_resources('ASRL?*::INSTR')
         except Exception as err:
-            print(err)
+            log.debug('%s', err)
             return []
         return [r for r in resources if r.startswith('ASRL')]
 
@@ -31,28 +34,28 @@ class Instruments:
         try:
             inst = self.rm.open_resource(resource_name)
         except Exception as err:
-            print(err)
-            print("err opening instrument")
+            log.debug('%s', err)
+            log.debug("err opening instrument")
             return None
 
         try:
             driver = px100.PX100(inst)
             if driver.probe():
-                print("found " + driver.name)
+                log.debug("found " + driver.name)
                 return driver
-            print("ko")
+            log.debug("ko")
             inst.close()
             return None
         except Exception as err:
-            print(type(err))
-            print(err.args)
-            print(err)
-            print("err")
+            log.debug('%s', type(err))
+            log.debug('%s', err.args)
+            log.debug('%s', err)
+            log.debug("err")
             try:
                 inst.close()
             except Exception as close_err:
-                print(type(close_err))
-                print(close_err.args)
-                print(close_err)
-                print("no close")
+                log.debug('%s', type(close_err))
+                log.debug('%s', close_err.args)
+                log.debug('%s', close_err)
+                log.debug("no close")
             return None

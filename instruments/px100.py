@@ -8,10 +8,13 @@ from datetime import time
 from math import modf
 from numbers import Number
 from time import sleep
+import logging
 
 import pyvisa as visa
 
 from instruments.instrument import Instrument
+
+log = logging.getLogger(__name__)
 
 
 class PX100(Instrument):
@@ -93,7 +96,7 @@ class PX100(Instrument):
     }
 
     def __init__(self, device):
-        print(device)
+        log.debug('%s', device)
         self.device = device
         self.name = "DL24"
         self.aux_index = 0
@@ -112,7 +115,7 @@ class PX100(Instrument):
         }
 
     def probe(self):
-        print("probe")
+        log.debug("probe")
         if not isinstance(self.device, visa.resources.SerialInstrument):
             return False
 
@@ -123,7 +126,7 @@ class PX100(Instrument):
         return self.__is_number(self.getVal(PX100.VOLTAGE))
 
     def readAll(self, read_all_aux=False):
-        print("readAll")
+        log.debug("readAll")
         self.__clear_device()
         self.update_vals(PX100.FREQ_VALS)
 
@@ -153,9 +156,9 @@ class PX100(Instrument):
             self.update_val(PX100.VERIFY_CMD[command])
             if self.data[PX100.VERIFY_CMD[command]] == value:
                 break
-            print("retry " + command)
-            print(self.data[PX100.VERIFY_CMD[command]])
-            print(value)
+            log.debug("retry " + command)
+            log.debug('%s', self.data[PX100.VERIFY_CMD[command]])
+            log.debug('%s', value)
             sleep(0.7)
 
         if (command == Instrument.COMMAND_RESET):
@@ -164,14 +167,14 @@ class PX100(Instrument):
     def getVal(self, command):
         ret = self.writeFunction(command, [0, 0])
         if (not ret or len(ret) == 0):
-            print("no answer")
+            log.debug("no answer")
             return False
         elif (len(ret) == 1 and ret[0] == 0x6F):
-            print("setval")
+            log.debug("setval")
             return False
         elif (len(ret) < 7 or ret[0] != 0xCA or ret[1] != 0xCB
               or ret[5] != 0xCE or ret[6] != 0xCF):
-            print("Receive error")
+            log.debug("Receive error")
             return False
 
         try:
@@ -212,14 +215,14 @@ class PX100(Instrument):
             self.device.write_raw(frame)
             return self.device.read_bytes(resp_len)
         except Exception as inst:
-            print(type(inst))    # the exception instance
-            print(inst.args)     # arguments stored in .args
-            print(inst)
-            print("error reading bytes")
+            log.debug('%s', type(inst))
+            log.debug('%s', inst.args)
+            log.debug('%s', inst)
+            log.debug("error reading bytes")
             return False
 
     def turnOFF(self):
-        print("turnoff")
+        log.debug("turnoff")
         self.setVal(PX100.OUTPUT, PX100.DISABLED)
 
     def close(self):
@@ -242,10 +245,10 @@ class PX100(Instrument):
         try:
             self.device.read_bytes(self.device.bytes_in_buffer)
         except Exception as inst:
-            print(type(inst))    # the exception instance
-            print(inst.args)     # arguments stored in .args
-            print(inst)
-            print("error reading bytes")
+            log.debug('%s', type(inst))
+            log.debug('%s', inst.args)
+            log.debug('%s', inst)
+            log.debug("error reading bytes")
             self.device.close
             return False
 
